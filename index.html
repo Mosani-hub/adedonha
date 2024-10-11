@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - Untitled</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Adedonha com Roleta e Temporizador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            max-width: 1000px;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #000;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        input {
+            width: 120px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: grey;
+        }
+
+        #roulette {
+            width: 200px;
+            height: 200px;
+            border: 10px solid #4CAF50;
+            border-radius: 50%;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #pointer {
+            width: 0; 
+            height: 0; 
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid red;
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #letterDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        #timer {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Jogo de Adedonha com Roleta e Temporizador</h1>
+
+<div id="roulette">
+    <div id="pointer"></div>
+    <div id="letterDisplay">?</div>
+</div>
+
+<button onclick="spinRoulette()">Girar Roleta</button>
+
+<div id="timer">Tempo restante: <span id="timeLeft">300</span> segundos</div>
+
+<table id="gameTable">
+    <thead>
+        <tr>
+            <th>Jogador</th>
+            <th>Objeto</th>
+            <th>Cidades</th>
+            <th>Nomes</th>
+            <th>Pessoas</th>
+            <th>Carros</th>
+            <th>Marcas</th>
+            <th>Frutas</th>
+            <th>País</th>
+            <th>Novelas</th>
+            <th>Profissão</th>
+            <th>Animal</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody id="playersRows">
+        <!-- Linhas para jogadores serão adicionadas aqui -->
+    </tbody>
+</table>
+
+<button onclick="addPlayer()">Adicionar Jogador</button>
+<button onclick="calculateScores()" id="calcBtn" disabled>Calcular Pontuação</button>
+
+<div class="result" id="result">
+    <!-- Resultados aparecerão aqui -->
+</div>
+
+<script>
+    let playersCount = 0;
+    let selectedLetter = '';
+    let timer;
+    let timeLeft = 300; // 5 minutos
+
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    function addPlayer() {
+        playersCount++;
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td>Jogador ${playersCount}</td>
+            <td><input type="text" class="object"></td>
+            <td><input type="text" class="city"></td>
+            <td><input type="text" class="name"></td>
+            <td><input type="text" class="person"></td>
+            <td><input type="text" class="car"></td>
+            <td><input type="text" class="brand"></td>
+            <td><input type="text" class="fruit"></td>
+            <td><input type="text" class="country"></td>
+            <td><input type="text" class="novel"></td>
+            <td><input type="text" class="profession"></td>
+            <td><input type="text" class="animal"></td>
+            <td class="total">0</td>
+        `;
+
+        document.getElementById('playersRows').appendChild(row);
+        document.getElementById('calcBtn').disabled = false;
+    }
+
+    function calculateScores() {
+        const categories = ['object', 'city', 'name', 'person', 'car', 'brand', 'fruit', 'country', 'novel', 'profession', 'animal'];
+        const playerInputs = document.querySelectorAll('#playersRows tr');
+        let scores = Array(playersCount).fill(0);
+
+        categories.forEach(category => {
+            let categoryWords = [];
+
+            // Coletar as palavras da categoria atual
+            playerInputs.forEach((playerRow, index) => {
+                const input = playerRow.querySelector(`.${category}`).value.toLowerCase().trim();
+                if (input.startsWith(selectedLetter.toLowerCase())) {
+                    categoryWords.push({ word: input, index });
+                } else {
+                    scores[index] -= 5; // -5 pontos se a palavra não começar com a letra da rodada
+                }
+            });
+
+            // Checar por palavras repetidas e calcular os pontos
+            categoryWords.forEach(({ word, index }) => {
+                if (word && categoryWords.filter(w => w.word === word).length === 1) {
+                    scores[index] += 10; // 10 pontos se a palavra não for repetida
+                } else if (word) {
+                    scores[index] -= 5; // -5 pontos se a palavra for repetida
+                }
+            });
+        });
+
+        // Exibir os totais de pontos no final de cada linha
+        playerInputs.forEach((playerRow, index) => {
+            playerRow.querySelector('.total').textContent = scores[index];
+        });
+
+        displayResults(scores);
+    }
+
+    function displayResults(scores) {
+        let resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '<h2>Resultados</h2>';
+        scores.forEach((score, index) => {
+            resultDiv.innerHTML += `<p>Jogador ${index + 1}: ${score} pontos</p>`;
+        });
+    }
+
+    function spinRoulette() {
+        const randomIndex = Math.floor(Math.random() * letters.length);
+        selectedLetter = letters[randomIndex];
+        document.getElementById('letterDisplay').innerText = selectedLetter;
+        startTimer(300); // Começar o timer de 300 segundos (5 minutos)
+    }
+
+    function startTimer(seconds) {
+        clearInterval(timer);
+        timeLeft = seconds;
+        document.getElementById('timeLeft').innerText = timeLeft;
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timeLeft').innerText = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                alert('Tempo esgotado! Calcule a pontuação.');
+            }
+        }, 1000);
+    }
+</script>
+
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
